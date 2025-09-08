@@ -4,5 +4,5 @@
 print("$ ", terminator: "")
 
 if let input = readLine() {
-    print(input)
+    print("\(input): command not found")
 }
