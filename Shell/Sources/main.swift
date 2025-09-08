@@ -1,38 +1,106 @@
 // The Swift Programming Language
 // https://docs.swift.org/swift-book
 
+import Foundation
+
 enum ShellCommand: String {
     case echo, type, exit
 }
 
-while true {
-    print("$ ", terminator: "")
+struct Shell {
+    func run() {
+        while true {
+            print("$ ", terminator: "")
+            fflush(stdout)
 
-    if let input = readLine() {
-        let inputArray = input.split(separator: " ")
-        let firstInput: String? = inputArray.first.map { String($0) }
-        let arguments = inputArray.dropFirst()
+            guard let input = readLine(), !input.isEmpty else { continue }
 
-        guard input != "exit 0",
-            let firstInput,
-            let command =
-                ShellCommand(rawValue: firstInput)
-        else {
-            break
+            if input == "exit 0" {
+                break
+            }
+
+            handleInput(input)
         }
 
+    }
+
+    private func handleInput(_ input: String) {
+        let components = input.split(separator: " ")
+        guard let commandStr = components.first else { return }
+
+        let command = String(commandStr)
+        let arguments = components.dropFirst().map(String.init)
+
+        if let shellCommand = ShellCommand(rawValue: command) {
+            executeBuiltinCommand(shellCommand, arguments: arguments)
+        } else {
+            executeExternalCommand(command, arguments: arguments)
+        }
+    }
+
+    private func executeBuiltinCommand(_ command: ShellCommand, arguments: [String]) {
         switch command {
         case .echo:
             print(arguments.joined(separator: " "))
         case .type:
-            let argumentString = arguments.joined()
-            if ShellCommand(rawValue: argumentString) != nil {
-                print("\(argumentString) is a shell builtin")
-            } else {
-                print("\(argumentString): not found")
-            }
-        default:
-            print("\(input): command not found")
+            handleTypeCommand(arguments: arguments)
+        case .exit:
+            exit(0)
         }
     }
+
+    private func handleTypeCommand(arguments: [String]) {
+        let argumentString = arguments.joined(separator: " ")
+
+        if ShellCommand(rawValue: argumentString) != nil {
+            print("\(argumentString) is a shell builtin")
+        } else {
+            let paths = getEnvironmentPaths()
+            var commandFound = false
+            for path in paths {
+                let fullPath = path + "/\(argumentString)"
+                if checkFileExistsAndExecutable(for: fullPath) {
+                    print("\(argumentString) is \(fullPath)")
+                    commandFound = true
+                    break
+                }
+            }
+
+            if commandFound == false {
+                print("\(argumentString): not found")
+            }
+        }
+    }
+
+    private func executeExternalCommand(_ command: String, arguments: [String]) {
+        print("\(command): command not found")
+    }
+
+    private func getEnvironmentPaths() -> [String] {
+        guard let pathString = ProcessInfo.processInfo.environment["PATH"],
+            !pathString.isEmpty
+        else {
+            return []
+        }
+
+        return pathString.components(separatedBy: ":")
+            .filter { !$0.isEmpty }  // used to removed empty strings
+    }
+
+    private func checkFileExistsAndExecutable(for path: String) -> Bool {
+        let fileManager = FileManager.default
+
+        if fileManager.fileExists(atPath: path) {
+            if fileManager.isExecutableFile(atPath: path) {
+                return true
+            }
+
+            return false
+        }
+
+        return false
+    }
 }
+
+let shell = Shell()
+shell.run()
