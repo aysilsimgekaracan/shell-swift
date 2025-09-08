@@ -1,8 +1,10 @@
 // The Swift Programming Language
 // https://docs.swift.org/swift-book
 
-print("$ ", terminator: "")
+while true {
+    print("$ ", terminator: "")
 
-if let input = readLine() {
-    print("\(input): command not found")
+    if let input = readLine() {
+        print("\(input): command not found")
+    }
 }
