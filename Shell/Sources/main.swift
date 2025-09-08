@@ -5,11 +5,20 @@ while true {
     print("$ ", terminator: "")
 
     if let input = readLine() {
+        let inputArray = input.split(separator: " ")
+        let command = inputArray.first
+        let arguments = inputArray.dropFirst()
 
-        guard input != "exit 0" else {
+        guard input != "exit 0", let command else {
             break
         }
 
-        print("\(input): command not found")
+        if command == "echo" {
+            print(arguments.joined(separator: " "))
+        } else {
+
+            print("\(input): command not found")
+        }
+
     }
 }
