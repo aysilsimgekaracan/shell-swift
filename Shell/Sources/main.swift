@@ -58,7 +58,10 @@ struct Shell {
             let paths = getEnvironmentPaths()
             var commandFound = false
             for path in paths {
-                let fullPath = path + "/\(argumentString)"
+                let fullPath = URL(fileURLWithPath: path)
+                    .appendingPathComponent(argumentString)
+                    .path
+
                 if checkFileExistsAndExecutable(for: fullPath) {
                     print("\(argumentString) is \(fullPath)")
                     commandFound = true
@@ -73,7 +76,24 @@ struct Shell {
     }
 
     private func executeExternalCommand(_ command: String, arguments: [String]) {
-        print("\(command): command not found")
+        let paths = getEnvironmentPaths()
+        var commandFound = false
+        for path in paths {
+            let fullPath = URL(fileURLWithPath: path)
+                .appendingPathComponent(command)
+                .path
+
+            if checkFileExistsAndExecutable(for: fullPath) {
+                let output = bash(path: fullPath, arguments: arguments)
+                print(output, terminator: "")
+                commandFound = true
+                break
+            }
+        }
+
+        if commandFound == false {
+            print("\(command): not found")
+        }
     }
 
     private func getEnvironmentPaths() -> [String] {
@@ -100,6 +120,23 @@ struct Shell {
 
         return false
     }
+
+    @discardableResult
+    private func bash(path: String, arguments: [String]) -> String {
+        let process = Process()
+        let pipe = Pipe()
+
+        process.standardOutput = pipe
+        process.executableURL = URL(fileURLWithPath: path)
+        process.arguments = arguments
+
+        try! process.run()
+        process.waitUntilExit()
+
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        return String(data: data, encoding: .utf8) ?? ""
+    }
+
 }
 
 let shell = Shell()
