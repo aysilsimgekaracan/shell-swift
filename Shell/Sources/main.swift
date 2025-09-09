@@ -4,7 +4,7 @@
 import Foundation
 
 enum ShellCommand: String {
-    case echo, type, exit, pwd
+    case echo, type, exit, pwd, cd
 }
 
 struct Shell {
@@ -42,38 +42,19 @@ struct Shell {
         switch command {
         case .echo:
             print(arguments.joined(separator: " "))
+
         case .type:
             handleTypeCommand(arguments: arguments)
+
         case .pwd:
             handlePwdCommand()
+
+        case .cd:
+            let path = arguments.first ?? ""
+            handleCdCommand(with: path)
+
         case .exit:
             exit(0)
-        }
-    }
-
-    private func handleTypeCommand(arguments: [String]) {
-        let argumentString = arguments.joined(separator: " ")
-
-        if ShellCommand(rawValue: argumentString) != nil {
-            print("\(argumentString) is a shell builtin")
-        } else {
-            let paths = getEnvironmentPaths()
-            var commandFound = false
-            for path in paths {
-                let fullPath = URL(fileURLWithPath: path)
-                    .appendingPathComponent(argumentString)
-                    .path
-
-                if checkFileExistsAndExecutable(for: fullPath) {
-                    print("\(argumentString) is \(fullPath)")
-                    commandFound = true
-                    break
-                }
-            }
-
-            if commandFound == false {
-                print("\(argumentString): not found")
-            }
         }
     }
 
@@ -109,6 +90,18 @@ struct Shell {
             .filter { !$0.isEmpty }  // used to removed empty strings
     }
 
+    // MARK: Helpers
+
+    private func getEnvironmentHomePath() -> String {
+        guard let path = ProcessInfo.processInfo.environment["HOME"],
+            !path.isEmpty
+        else {
+            return "."
+        }
+
+        return path
+    }
+
     private func checkFileExistsAndExecutable(for path: String) -> Bool {
         let fileManager = FileManager.default
 
@@ -139,9 +132,52 @@ struct Shell {
         return String(data: data, encoding: .utf8) ?? ""
     }
 
+    // MARK: Implemented commands
+
+    private func handleTypeCommand(arguments: [String]) {
+        let argumentString = arguments.joined(separator: " ")
+
+        if ShellCommand(rawValue: argumentString) != nil {
+            print("\(argumentString) is a shell builtin")
+        } else {
+            let paths = getEnvironmentPaths()
+            var commandFound = false
+            for path in paths {
+                let fullPath = URL(fileURLWithPath: path)
+                    .appendingPathComponent(argumentString)
+                    .path
+
+                if checkFileExistsAndExecutable(for: fullPath) {
+                    print("\(argumentString) is \(fullPath)")
+                    commandFound = true
+                    break
+                }
+            }
+
+            if commandFound == false {
+                print("\(argumentString): not found")
+            }
+        }
+    }
+
     private func handlePwdCommand() {
         let fileManager = FileManager.default
         print(fileManager.currentDirectoryPath)
+    }
+
+    private func handleCdCommand(with path: String) {
+        let resolvedPath =
+            if path.isEmpty || path == "~" {
+                getEnvironmentHomePath()
+            } else {
+                path
+            }
+
+        let fileManager = FileManager.default
+
+        if !fileManager.changeCurrentDirectoryPath(resolvedPath) {
+            print("cd: \(resolvedPath): No such file or directory")
+        }
     }
 
 }
