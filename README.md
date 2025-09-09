@@ -7,7 +7,7 @@ A UNIX shell implementation built in Swift, heavily inspired by the [Build your 
 While CodeCrafters provides starter code for languages such as Rust, Python, and Go, it does not offer Swift support for this challenge. Therefore, I created this implementation in Swift to complete the project.
 
 ### Key Features
-- Built-in commands (`echo`, `type`, `exit`)
+- Built-in commands (`echo`, `type`, `exit`, `pwd`, `cd`)
 - External program execution with PATH resolution
 - Command-line argument parsing
 
