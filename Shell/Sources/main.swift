@@ -4,7 +4,7 @@
 import Foundation
 
 enum ShellCommand: String {
-    case echo, type, exit
+    case echo, type, exit, pwd
 }
 
 struct Shell {
@@ -44,6 +44,8 @@ struct Shell {
             print(arguments.joined(separator: " "))
         case .type:
             handleTypeCommand(arguments: arguments)
+        case .pwd:
+            handlePwdCommand()
         case .exit:
             exit(0)
         }
@@ -135,6 +137,11 @@ struct Shell {
 
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         return String(data: data, encoding: .utf8) ?? ""
+    }
+
+    private func handlePwdCommand() {
+        let fileManager = FileManager.default
+        print(fileManager.currentDirectoryPath)
     }
 
 }
